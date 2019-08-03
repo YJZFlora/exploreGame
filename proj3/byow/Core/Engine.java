@@ -18,6 +18,16 @@ public class Engine {
     private position savedPlayerPosition;
     TETile[][] world = new TETile[WIDTH][HEIGHT];
 
+    class gameInfo {
+        position playerP;
+        long savedSeed;
+
+        gameInfo(position p, long s) {
+            this.playerP = p;
+            this.savedSeed = s;
+        }
+    }
+
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
@@ -26,16 +36,19 @@ public class Engine {
         StdDraw.setCanvasSize(this.WIDTH * 16, this.HEIGHT * 16);
         StdDraw.setXscale(0, WIDTH);
         StdDraw.setYscale(0, HEIGHT);
-
         showBeginMenu();
 
-        String firstCommand = listenToUserInput();
+        String firstCommand = getFirstCommand();
         System.out.println(firstCommand);  // good
+
+        position playerPosition = new position(0, 0);
+        boolean saveGame = false;
+
 
 
         // open game UI
         if (beginSeed(0, firstCommand)) {
-            beginNewGameWithInput();
+            gameInfo savedInfo =  beginNewGameWithInput();
         } else if (needLoadGame(0, firstCommand)) {
             //loadGame();
             quit();
@@ -64,7 +77,7 @@ public class Engine {
 
     }
 
-    private String listenToUserInput() {
+    private String getFirstCommand() {
         boolean validInput = false;
         char key = 'a';
         while (!validInput) {
@@ -80,9 +93,31 @@ public class Engine {
         return String.valueOf(key).toLowerCase();
     }
 
-    private void beginNewGameWithInput() {
+    private gameInfo beginNewGameWithInput() {
         long theSeed = seedUI();
-        playGame(theSeed);
+        position beginPosition = GameUI(theSeed);
+        position playerPosition = beginPosition;
+
+        System.out.println("original position " + playerPosition.x + ", " + playerPosition.y);
+        boolean saveGame = false;
+        char c1 = 'a';
+        while (!saveGame) {
+            if (!StdDraw.hasNextKeyTyped()) {
+                continue;
+            }
+            char key = StdDraw.nextKeyTyped();
+            if (c1 == ':' && key == 'q') {
+                saveGame = true;
+                break;
+            }
+            c1 = key;
+            System.out.println("move: " + key);
+            playerPosition = move(key, world, playerPosition);
+            System.out.println("after move, position " + playerPosition.x + ", " + playerPosition.y);
+
+            ter.renderFrame(world);
+        }
+        return new gameInfo(playerPosition, theSeed);
     }
 
     // good
@@ -107,6 +142,18 @@ public class Engine {
         return theSeed;
     }
 
+    private position GameUI(long theSeed) {
+        MapGenerator map = beginNewGame(world, theSeed);
+        ter.initialize(WIDTH, HEIGHT);
+        ter.renderFrame(world);
+        return map.getPlayerP();
+    }
+/*
+    private void loadGame() {
+        load ...
+        playGame();
+    }
+ */
 
     private void drawFrame(String s) {
         int midWidth = WIDTH / 2;
@@ -118,34 +165,7 @@ public class Engine {
         StdDraw.text(midWidth, midHeight, s);
     }
 
-    private void playGame(long theSeed) {
-        MapGenerator map = beginNewGame(world, theSeed);
-        ter.initialize(WIDTH, HEIGHT);
-        ter.renderFrame(world);
-       /*
-        while (c1 != ':') {
-            c1 = listenToUserInput();
-            playTheGame();
-        }
 
-        char c2 = listenToUserInput();
-        if (c1 == ':' && c2 == 'q') {
-            save();
-            quit();
-        }
-
-        */
-    }
-/*
-    private void loadGame() {
-        load ...
-        playGame();
-    }
-
-
-
-
- */
     /**
      * Recall that strings ending in ":q" should cause the game to quite save.
      * both of these calls:
