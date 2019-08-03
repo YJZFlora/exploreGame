@@ -4,6 +4,10 @@ import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import byow.Core.MapGenerator.position;
+import edu.princeton.cs.introcs.StdDraw;
+
+import java.awt.*;
+import java.util.Map;
 
 public class Engine {
     TERenderer ter = new TERenderer();
@@ -19,9 +23,129 @@ public class Engine {
      * including inputs from the main menu.
      */
     public void interactWithKeyboard() {
+        StdDraw.setCanvasSize(this.WIDTH * 16, this.HEIGHT * 16);
+        StdDraw.setXscale(0, WIDTH);
+        StdDraw.setYscale(0, HEIGHT);
+
+        showBeginMenu();
+
+        String firstCommand = listenToUserInput();
+        System.out.println(firstCommand);  // good
+
+
+        // open game UI
+        if (beginSeed(0, firstCommand)) {
+            beginNewGameWithInput();
+        } else if (needLoadGame(0, firstCommand)) {
+            //loadGame();
+            quit();
+        } else if (firstCommand.charAt(0) == 'q') {
+            quit();
+        }
 
     }
 
+    private void showBeginMenu() {
+        int midWidth = WIDTH / 2;
+        int highPlace = HEIGHT * 5/8;
+        int midHeight = HEIGHT / 2;
+
+        StdDraw.clear(Color.black);
+        StdDraw.setPenColor(Color.white);
+        Font titleFont = new Font("Monaco", Font.BOLD, 40);
+        StdDraw.setFont(titleFont);
+        StdDraw.text(midWidth, highPlace, "EXPLORE GAME");
+
+        Font smallFont = new Font("Monaco", Font.BOLD, 20);
+        StdDraw.setFont(smallFont);
+        StdDraw.text(midWidth, midHeight, "New Game (N)");
+        StdDraw.text(midWidth, midHeight - 2, "Load Game (L)");
+        StdDraw.text(midWidth, midHeight - 4, "Quit (Q)");
+
+    }
+
+    private String listenToUserInput() {
+        boolean validInput = false;
+        char key = 'a';
+        while (!validInput) {
+            if (!StdDraw.hasNextKeyTyped()) {
+                continue;
+            }
+            key = StdDraw.nextKeyTyped();
+            if (key == 'n' || key == 'l' || key == 'q') {
+                validInput = true;
+
+            }
+        }
+        return String.valueOf(key).toLowerCase();
+    }
+
+    private void beginNewGameWithInput() {
+        long theSeed = seedUI();
+        playGame(theSeed);
+    }
+
+    // good
+    private long seedUI() {
+        drawFrame("Please enter seed, end with 's' :");
+        String seedFromKeyboard = "";
+        boolean toContinue = true;
+        long theSeed = 1456780;
+        while (toContinue) {
+            if (!StdDraw.hasNextKeyTyped()) {
+                continue;
+            }
+            char key = StdDraw.nextKeyTyped();
+            if (key != 's' && key != 'S') {
+                seedFromKeyboard += String.valueOf(key);
+                drawFrame("Please enter seed, end with 's' :" + seedFromKeyboard);
+            } else {
+                toContinue = false;
+                theSeed = getSeed(0, "n" + seedFromKeyboard + "s");
+            }
+        }
+        return theSeed;
+    }
+
+
+    private void drawFrame(String s) {
+        int midWidth = WIDTH / 2;
+        int midHeight = HEIGHT / 2;
+        StdDraw.clear(Color.black);
+        StdDraw.setPenColor(Color.white);
+        Font smallFont = new Font("Monaco", Font.BOLD, 20);
+        StdDraw.setFont(smallFont);
+        StdDraw.text(midWidth, midHeight, s);
+    }
+
+    private void playGame(long theSeed) {
+        MapGenerator map = beginNewGame(world, theSeed);
+        ter.initialize(WIDTH, HEIGHT);
+        ter.renderFrame(world);
+       /*
+        while (c1 != ':') {
+            c1 = listenToUserInput();
+            playTheGame();
+        }
+
+        char c2 = listenToUserInput();
+        if (c1 == ':' && c2 == 'q') {
+            save();
+            quit();
+        }
+
+        */
+    }
+/*
+    private void loadGame() {
+        load ...
+        playGame();
+    }
+
+
+
+
+ */
     /**
      * Recall that strings ending in ":q" should cause the game to quite save.
      * both of these calls:
@@ -52,7 +176,8 @@ public class Engine {
             // begin a new game with "N#S" seed
             if (beginSeed(i, s)) {
                 seed = getSeed(i, s);
-                playerPosition = beginNewGame(world, playerPosition, seed);
+                MapGenerator map = beginNewGame(world, seed);
+                playerPosition = map.getPlayerP();
                 i = skipSeed(i, s);
                 continue;
             }
@@ -71,11 +196,10 @@ public class Engine {
         return world;
     }
 
-   private position beginNewGame(TETile[][] theWorld, position playerPosition, long seed) {
+   private MapGenerator beginNewGame(TETile[][] theWorld, long seed) {
         MapGenerator map = new MapGenerator(seed, 90, HEIGHT, ter);
         map.start(theWorld);
-        playerPosition = map.getPlayerP();
-        return playerPosition;
+        return map;
    }
 
    private long getSeed(int i, String s) {
