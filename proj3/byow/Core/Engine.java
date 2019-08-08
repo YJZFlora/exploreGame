@@ -5,9 +5,7 @@ import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import byow.Core.MapGenerator.position;
 import edu.princeton.cs.introcs.StdDraw;
-
 import java.awt.*;
-import java.util.Map;
 
 public class Engine {
     TERenderer ter = new TERenderer();
@@ -64,14 +62,16 @@ public class Engine {
         long theSeed = 0;
         position beginPosition = new position(0,0);
 
-        if (newOrLoad == "new") {
+        if (newOrLoad.equals("new")) {
             theSeed = seedUI();
             beginPosition = GameUI(theSeed, "new");
-        } else if (newOrLoad == "load") {
+        } else if (newOrLoad.equals("load")) {
             theSeed = savedSeed;
             beginPosition = savedPlayerPosition;
             GameUI(savedSeed, "load");
         }
+
+        // interacting
         position playerPosition = beginPosition;
         boolean saveGame = false;
         char c1 = 'a';
@@ -103,7 +103,10 @@ public class Engine {
     }
 
     private long seedUI() {
-        drawFrame("Please enter seed, end with 's' :");
+        StdDraw.clear(Color.black);
+        drawFrame("Please enter seed, end with 's' :", WIDTH / 2,  HEIGHT / 2, 20);
+        StdDraw.show();
+
         String seedFromKeyboard = "";
         boolean toContinue = true;
         long theSeed = 1456780;
@@ -113,7 +116,11 @@ public class Engine {
             char key = StdDraw.nextKeyTyped();
             if (key != 's' && key != 'S') {
                 seedFromKeyboard += String.valueOf(key);
-                drawFrame("Please enter seed, end with 's' :" + seedFromKeyboard);
+                StdDraw.clear(Color.black);
+                String toShow = "Please enter seed, end with 's' :" + seedFromKeyboard;
+                drawFrame(toShow, WIDTH / 2,  HEIGHT / 2, 20);
+                StdDraw.show();
+
             } else {
                 toContinue = false;
                 theSeed = getSeed(0, "n" + seedFromKeyboard + "s");
@@ -126,21 +133,23 @@ public class Engine {
         int midWidth = WIDTH / 2;
         int highPlace = HEIGHT * 5/8;
         int midHeight = HEIGHT / 2;
-
         StdDraw.clear(Color.black);
-        StdDraw.setPenColor(Color.white);
-        Font titleFont = new Font("Monaco", Font.BOLD, 40);
-        StdDraw.setFont(titleFont);
-        StdDraw.text(midWidth, highPlace, "EXPLORE GAME");
 
-        Font smallFont = new Font("Monaco", Font.BOLD, 20);
-        StdDraw.setFont(smallFont);
-        StdDraw.text(midWidth, midHeight, "New Game (N)");
-        StdDraw.text(midWidth, midHeight - 2, "Load Game (L)");
-        StdDraw.text(midWidth, midHeight - 4, "Quit (Q)");
+        drawFrame("EXPLORE GAME", midWidth, highPlace, 40);
+        drawFrame("New Game (N)", midWidth, midHeight, 20);
+        drawFrame("Load Game (L)", midWidth, midHeight - 2, 20);
+        drawFrame("Quit (Q)", midWidth, midHeight - 4, 20);
+
         StdDraw.show();
 
         return getFirstCommand();
+    }
+    private void drawFrame(String s, int x, int y, int fontSize) {
+
+        StdDraw.setPenColor(Color.white);
+        Font smallFont = new Font("Monaco", Font.BOLD, fontSize);
+        StdDraw.setFont(smallFont);
+        StdDraw.text(x, y, s);
     }
 
     private void saveGame(gameInfo gi) {
@@ -151,78 +160,21 @@ public class Engine {
     private String getFirstCommand() {
         boolean validInput = false;
         char key = 'a';
+        String r = "a";
         while (!validInput) {
             if (!StdDraw.hasNextKeyTyped()) continue;
 
             key = StdDraw.nextKeyTyped();
-            if (key == 'n' || key == 'l' || key == 'q') {
+            r = String.valueOf(key).toLowerCase();
+            if (r.equals("n") || r.equals("l") || r.equals("q")) {
                 validInput = true;
             }
         }
-        return String.valueOf(key).toLowerCase();
-    }
-
-    private void drawFrame(String s) {
-        int midWidth = WIDTH / 2;
-        int midHeight = HEIGHT / 2;
-        StdDraw.clear(Color.black);
-        StdDraw.setPenColor(Color.white);
-        Font smallFont = new Font("Monaco", Font.BOLD, 20);
-        StdDraw.setFont(smallFont);
-        StdDraw.text(midWidth, midHeight, s);
-        StdDraw.show();
-    }
-
-
-    /**
-     * Recall that strings ending in ":q" should cause the game to quite save.
-     * both of these calls:
-     *   - interactWithInputString("n123sss:q")
-     *   - interactWithInputString("lww")
-     *
-     * should yield the exact same world state as:
-     *   - interactWithInputString("n123sssww")
-     *
-     *   assume that every replay string starts with either “N#S” or “L”, where # represents the user entered seed.
-     *
-     * @param input the input string to feed to your program
-     * @return the 2D TETile[][] representing the state of the world
-     */
-    public TETile[][] interactWithInputString(String input) {
-
-        String s = input.toLowerCase();
-        position playerPosition;
-        if (savedPlayerPosition != null) {
-            playerPosition = loadGame(world);
-        } else {
-            playerPosition = new position(0,0);
-        }
-
-        long seed = savedSeed;
-
-        for (int i = 0; i < s.length(); i++) {
-            // begin a new game with "N#S" seed
-            if (beginSeed(i, s)) {
-                seed = getSeed(i, s);
-                MapGenerator map = generateMap(world, seed);
-                playerPosition = map.getPlayerP();
-                i = skipSeed(i, s);
-                continue;
-            }
-            // time to load game or save game or move
-            if (needLoadGame(i, s)) playerPosition = loadGame(world);
-            else if (needSaveAndQuit(i, s)) {
-                gameInfo gi = new gameInfo(playerPosition, seed, true);
-                saveGame(gi);
-                quit();
-                i += 1;
-            } else playerPosition = move(s.charAt(i), world, playerPosition);
-        }
-        return world;
+        return r;
     }
 
    private MapGenerator generateMap(TETile[][] theWorld, long seed) {
-        MapGenerator map = new MapGenerator(seed, 90, HEIGHT, ter);
+        MapGenerator map = new MapGenerator(seed, WIDTH, HEIGHT, ter);
         map.start(theWorld);
         return map;
    }
@@ -242,24 +194,6 @@ public class Engine {
        }
        if (isNegative) seed *= -1;
        return seed;
-   }
-
-   private position loadGame(TETile[][] world) {
-        if (savedPlayerPosition == null) {
-            quit();
-            return null;
-        }
-        MapGenerator map = new MapGenerator(savedSeed, WIDTH, HEIGHT, ter);
-        map.start(world);
-        sendPlayerto(map.getPlayerP(), savedPlayerPosition, world);
-        return savedPlayerPosition;
-   }
-
-   private int skipSeed(int i, String s) {
-       while (s.charAt(i) != 's') {
-           i += 1;
-       }
-       return i; // pointing at 's'
    }
 
    /* in the world, move one step
@@ -291,13 +225,8 @@ public class Engine {
        System.exit(0);
     }
 
-
     private boolean beginSeed(int i, String s) {
         return s.charAt(i) == 'n';
-    }
-
-    private boolean needSaveAndQuit (int i, String s){
-        return s.charAt(i) == ':' && s.charAt(i + 1) == 'q';
     }
 
     private boolean needLoadGame(int i, String s) {

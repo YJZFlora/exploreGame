@@ -17,13 +17,14 @@ public class MapGeneratorTest {
         ter.initialize(width, height);
         */
 
+        /*
         Engine e = new Engine();
         TETile[][] a = new TETile[3][3];
         changeA(a);
 
         TETile[][] world =  e.interactWithInputString("N46Sass:ql:qlas");
         world = e.interactWithInputString("lsdwwN123Sad:q");
-        /*
+
         // draws the world to the screen
         ter.renderFrame(world);
 
